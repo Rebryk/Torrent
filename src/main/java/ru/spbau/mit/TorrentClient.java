@@ -5,10 +5,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 
 /**
  * Created by rebryk on 13/04/16.
@@ -133,6 +130,57 @@ public class TorrentClient {
             }
         }
         file.close();
+    }
+
+    public void saveFilesInfo() throws IOException {
+        connection.saveFilesInfo();
+    }
+
+    public void loadFilesInfo() throws IOException {
+        connection.loadFilesInfo();
+    }
+
+    public static void main(String[] args) {
+        TorrentClient client = new TorrentClient(Short.valueOf(args[0]));
+        //TorrentClient client = new TorrentClient((short) 1025);
+
+        try {
+            client.loadFilesInfo();
+        } catch (IOException e) {
+            System.out.println("No data to load!");
+        }
+
+        Scanner scanner = new Scanner(System.in);
+        while (true) {
+            String line = scanner.nextLine();
+            List<String> arguments = Arrays.asList(line.split(" "));
+            if (arguments.size() == 0) {
+                continue;
+            }
+
+            switch (arguments.get(0)) {
+                case Console.START:
+                    Console.start(client);
+                    break;
+                case Console.STOP:
+                    Console.stop(client);
+                    break;
+                case Console.LIST:
+                    Console.list(client);
+                    break;
+                case Console.DOWNLOAD:
+                    Console.download(client, arguments.subList(1, arguments.size()));
+                    break;
+                case Console.UPLOAD:
+                    Console.upload(client, arguments.subList(1, arguments.size()));
+                    break;
+                case Console.EXIT:
+                    Console.exit(client);
+                    return;
+                default:
+                    System.out.println(Console.UNKNOWN_COMMAND);
+            }
+        }
     }
 
     private FileShortDescription getFileShortDescription(final int fileId) throws IOException {

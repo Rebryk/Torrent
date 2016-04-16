@@ -1,10 +1,10 @@
 package ru.spbau.mit;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.util.*;
 
 /**
@@ -87,5 +87,36 @@ public class P2PConnection extends AbstractServer {
         }
 
         return parts;
+    }
+
+    public void saveFilesInfo() throws IOException {
+        File dataFile = TorrentSettings.DATA_FILE_PATH.toFile();
+        if (!dataFile.exists()) {
+            Files.createFile(TorrentSettings.DATA_FILE_PATH);
+            dataFile = TorrentSettings.DATA_FILE_PATH.toFile();
+        }
+
+        DataOutputStream outputStream = new DataOutputStream(new FileOutputStream(dataFile));
+
+        outputStream.writeInt(files.size());
+        for (Map.Entry<Integer, FileDescription> entry : files.entrySet()) {
+            entry.getValue().writeToStream(outputStream);
+        }
+        outputStream.close();
+    }
+
+    public void loadFilesInfo() throws IOException {
+        if (!TorrentSettings.DATA_FILE_PATH.toFile().exists()) {
+            throw new NoSuchFileException(TorrentSettings.DATA_FILE_PATH.toString());
+        }
+
+        File dataFile = TorrentSettings.DATA_FILE_PATH.toFile();
+        DataInputStream inputStream = new DataInputStream(new FileInputStream(dataFile));
+
+        int filesCount = inputStream.readInt();
+        for (int i = 0; i < filesCount; i++) {
+            final FileDescription file = new FileDescription(inputStream);
+            files.put(file.getId(), file);
+        }
     }
 }

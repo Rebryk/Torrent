@@ -1,5 +1,8 @@
 package ru.spbau.mit;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 /**
  * Created by rebryk on 14/04/16.
  */
@@ -12,6 +15,8 @@ public final class TorrentSettings {
     public static final long UPDATE_DELAY = 60_000;
     public static final byte[] SERVER_IP = new byte[]{127, 0, 0, 1};
     public static final short IP_BUFFER_SIZE = 4;
+
+    public static final Path DATA_FILE_PATH = Paths.get("src", "main", "data.txt");
 
     private TorrentSettings() {}
 }

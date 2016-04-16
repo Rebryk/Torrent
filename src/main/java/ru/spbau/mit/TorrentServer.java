@@ -15,4 +15,9 @@ public class TorrentServer extends AbstractServer {
 
         setHandlerFactory(new ClientHandlerFactory(files, clients, removeTasks));
     }
+
+    public static void main(final String[] args) {
+        final TorrentServer server = new TorrentServer();
+        server.start();
+    }
 }

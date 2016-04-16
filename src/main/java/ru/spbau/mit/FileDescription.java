@@ -1,7 +1,11 @@
 package ru.spbau.mit;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -25,6 +29,27 @@ public class FileDescription extends FileShortDescription {
 
         for (int i = 0; i < blocksCount; ++i) {
             this.blocks.add(i);
+        }
+    }
+
+    public FileDescription(final DataInputStream stream) throws IOException {
+        super(stream);
+        this.path = Paths.get(stream.readUTF());
+        this.blocks = new HashSet<>();
+        this.blocksCount = (int) ((getSize() + TorrentSettings.BLOCK_SIZE - 1) / TorrentSettings.BLOCK_SIZE);
+
+        int savedBlocksCount = stream.readInt();
+        for (int j = 0; j < savedBlocksCount; j++) {
+            blocks.add(stream.readInt());
+        }
+    }
+
+    public void writeToStream(final DataOutputStream stream) throws IOException {
+        super.writeToStream(stream);
+        stream.writeUTF(path.toString());
+        stream.writeInt(blocks.size());
+        for (int block : blocks) {
+            stream.writeInt(block);
         }
     }
 
