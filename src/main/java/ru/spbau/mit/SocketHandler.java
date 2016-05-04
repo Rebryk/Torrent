@@ -20,6 +20,7 @@ public abstract class SocketHandler implements Runnable {
         try {
             DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
             DataInputStream inputStream = new DataInputStream(socket.getInputStream());
+
             while (!socket.isClosed()) {
                 handleRequest(inputStream, outputStream);
             }

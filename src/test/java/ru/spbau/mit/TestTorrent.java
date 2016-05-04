@@ -4,10 +4,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.apache.commons.io.FileUtils;
-
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import org.apache.commons.io.FileUtils;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -57,20 +56,14 @@ public class TestTorrent {
 
         TorrentClientMain client1 = new TorrentClientMain();
         client1.start(TorrentSettings.SERVER_IP);
-        Thread.sleep(DELAY);
         client1.uploadFile(FILE_PATH_1);
-        Thread.sleep(DELAY);
 
         TorrentClientMain client2 = new TorrentClientMain();
         client2.start(TorrentSettings.SERVER_IP);
-        Thread.sleep(DELAY);
 
         final List<FileShortDescription> list1 = client2.getFilesList();
-        Thread.sleep(DELAY);
         client2.download(0, DIRECTORY_CLIENT_2);
-        Thread.sleep(DELAY);
         client2.uploadFile(FILE_PATH_2);
-        Thread.sleep(DELAY);
 
         final List<FileShortDescription> list2 = client1.getFilesList();
 

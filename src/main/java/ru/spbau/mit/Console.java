@@ -36,12 +36,19 @@ public final class Console {
         try {
             client.start(address);
             List<FileShortDescription> filesList = client.getFilesList();
-            for (FileShortDescription file : filesList) {
-                System.out.println(ID + file.getId() + " "
-                        + NAME + file.getName() + " "
-                        + SIZE + file.getSize());
+
+            if (filesList.isEmpty()) {
+                System.out.println("No files!");
+            } else {
+                for (FileShortDescription file : filesList) {
+                    System.out.println(ID + file.getId() + " "
+                            + NAME + file.getName() + " "
+                            + SIZE + file.getSize());
+                }
             }
+
             client.stop();
+
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }

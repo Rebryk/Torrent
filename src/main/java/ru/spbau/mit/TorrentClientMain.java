@@ -9,6 +9,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by rebryk on 13/04/16.
@@ -28,8 +29,8 @@ public class TorrentClientMain {
     private TimerTask updateTask;
 
     TorrentClientMain() {
-        this.files = new HashMap<>();
-        this.filesToDownload = new HashMap<>();
+        this.files = new ConcurrentHashMap<>();
+        this.filesToDownload = new ConcurrentHashMap<>();
         this.connection = new P2PConnection(files);
         this.updateTimer = new Timer();
     }
@@ -45,10 +46,12 @@ public class TorrentClientMain {
         updateTask = new TimerTask() {
             @Override
             public void run() {
-                try {
-                    update();
-                } catch (IOException e) {
-                    e.printStackTrace();
+                synchronized (TorrentClientMain.this) {
+                    try {
+                        update();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         };
@@ -58,32 +61,29 @@ public class TorrentClientMain {
 
     public void stop() throws IOException {
         updateTask.cancel();
+        updateTimer.cancel();
         connection.stop();
         connection.disconnect();
         socket.close();
     }
 
     public void addFile(final FileDescription file) {
-        synchronized (files) {
-            files.put(file.getId(), file);
-        }
+        files.put(file.getId(), file);
     }
 
     public void addBlock(final int fileId, final int block) {
-        synchronized (files) {
-            if (files.containsKey(fileId)) {
-                files.get(fileId).addBlock(block);
-            }
+        if (files.containsKey(fileId)) {
+            files.get(fileId).addBlock(block);
         }
     }
 
     public List<Integer> getAvailableFiles() {
-        synchronized (files) {
-            return new ArrayList<>(files.keySet());
-        }
+        return new ArrayList<>(files.keySet());
     }
 
-    public List<FileShortDescription> getFilesList() throws IOException {
+    public synchronized List<FileShortDescription> getFilesList() throws IOException {
+        System.out.println("client: getFilesList started.");
+
         outputStream.writeInt(RequestType.GET_FILES_LIST.getId());
         outputStream.flush();
 
@@ -93,10 +93,12 @@ public class TorrentClientMain {
             files.add(new FileShortDescription(inputStream));
         }
 
+        System.out.println("client: getFilesList finished.");
         return files;
     }
 
-    public void uploadFile(final Path path) throws IOException {
+    public synchronized void uploadFile(final Path path) throws IOException {
+        System.out.println("client: uploadFile started.");
         final File file = path.toFile();
         if (!file.exists() || !file.isFile()) {
             throw new NoSuchFileException(path.toString());
@@ -110,9 +112,11 @@ public class TorrentClientMain {
         final int fileId = inputStream.readInt();
         addFile(new FileDescription(fileId, file));
         update();
+
+        System.out.println("client: uploadFile finished.");
     }
 
-    public void download(final int fileId, final Path path) throws IOException {
+    public synchronized void download(final int fileId, final Path path) throws IOException {
         final List<ClientDescription> seeds = getSeeds(fileId);
         final FileShortDescription fileShortDesc = getFileShortDescription(fileId);
 
@@ -131,7 +135,12 @@ public class TorrentClientMain {
 
         while (!fileDesc.isDownloaded()) {
             for (ClientDescription seed : seeds) {
-                connection.connect(seed.getIp(), seed.getPort());
+                try {
+                    connection.connect(seed.getIp(), seed.getPort());
+                } catch (IOException e) {
+                    continue;
+                }
+
                 final BitSet blocks = fileDesc.getBlocks();
                 for (int block = blocks.nextClearBit(0);
                      block < fileDesc.getBlocksCount();
@@ -158,6 +167,7 @@ public class TorrentClientMain {
 
     public void saveFilesInfo() throws IOException {
         File dataFile = TorrentSettings.DATA_FILE_PATH.toFile();
+
         if (!dataFile.exists()) {
             Files.createFile(TorrentSettings.DATA_FILE_PATH);
             dataFile = TorrentSettings.DATA_FILE_PATH.toFile();
@@ -222,6 +232,12 @@ public class TorrentClientMain {
         if (files == null) {
             return;
         }
+
+        final Path downloadDirectory = Paths.get(TorrentSettings.DOWNLOAD_DIRECTORY);
+        if (!downloadDirectory.toFile().exists()) {
+            Files.createDirectories(downloadDirectory);
+        }
+
         for (int file : files) {
             download(file, Paths.get(TorrentSettings.DOWNLOAD_DIRECTORY));
         }
@@ -240,33 +256,38 @@ public class TorrentClientMain {
         try {
             address = InetAddress.getByName(args[1]).getAddress();
         } catch (UnknownHostException e) {
-            System.out.print("Wrong tracker address!");
+            System.out.println("Wrong tracker address!");
             return;
         }
 
         switch (args[0]) {
             case Console.RUN:
+                System.out.println("client: run");
                 Console.run(client, address);
                 break;
             case Console.LIST:
+                System.out.println("client: list");
                 Console.list(client, address);
                 break;
             case Console.DOWNLOAD:
+                System.out.println("client: download");
                 Console.download(client, address, Integer.parseInt(args[2]));
                 break;
             case Console.UPLOAD:
+                System.out.println("client: newfile");
                 Console.upload(client, address, args[2]);
                 break;
             default:
                 System.out.println(Console.UNKNOWN_COMMAND);
         }
 
+
+        System.out.println("Trying to save data...");
         try {
             client.saveFilesInfo();
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
     private FileShortDescription getFileShortDescription(final int fileId) throws IOException {
@@ -289,7 +310,6 @@ public class TorrentClientMain {
             outputStream.writeInt(fileId);
         }
         outputStream.flush();
-
         return inputStream.readBoolean();
     }
 

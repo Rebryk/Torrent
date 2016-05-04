@@ -33,20 +33,25 @@ public class ClientHandler extends SocketHandler {
         RequestType request = RequestType.get(inputStream.readInt());
         switch (request) {
             case GET_FILES_LIST:
+                System.out.println("server: GET_FILES_LIST");
                 getFilesList(outputStream);
                 break;
             case UPLOAD_FILE:
+                System.out.println("server: UPLOAD_FILE");
                 uploadFile(inputStream, outputStream);
                 break;
             case GET_SEEDS:
+                System.out.println("server: GET_SEEDS");
                 getSeeds(inputStream, outputStream);
                 break;
             case UPDATE:
+                System.out.println("server: UPDATE");
                 update(inputStream, outputStream);
                 break;
             default:
                 throw new UnsupportedOperationException();
         }
+        System.out.println("server: DONE!");
     }
 
     private void getFilesList(final DataOutputStream outputStream) throws IOException {

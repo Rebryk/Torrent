@@ -16,7 +16,7 @@ public final class TorrentSettings {
     public static final byte[] SERVER_IP = new byte[]{127, 0, 0, 1};
     public static final short IP_BUFFER_SIZE = 4;
 
-    public static final Path DATA_FILE_PATH = Paths.get("src", "main", "data.txt");
+    public static final Path DATA_FILE_PATH = Paths.get("data.txt");
     public static final String DOWNLOAD_DIRECTORY = "downloads";
 
     private TorrentSettings() {}

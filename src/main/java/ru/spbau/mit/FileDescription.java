@@ -47,7 +47,7 @@ public class FileDescription extends FileShortDescription {
     public void writeToStream(final DataOutputStream stream) throws IOException {
         super.writeToStream(stream);
         stream.writeUTF(path.toString());
-        stream.writeInt(blocks.size());
+        stream.writeInt(blocks.cardinality());
         for (int i = 0; i < blocksCount; ++i) {
             if (blocks.get(i)) {
                 stream.writeInt(i);
