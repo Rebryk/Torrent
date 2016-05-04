@@ -12,17 +12,17 @@ public enum RequestType {
     UPDATE (5),
     NONE (6);
 
-    private final int value;
+    private final int id;
     RequestType(final int value) {
-        this.value = value;
+        this.id = value;
     }
 
-    public int getValue() {
-        return value;
+    public int getId() {
+        return id;
     }
 
     public static RequestType get(final int request) {
-        if (request < NONE.getValue()) {
+        if (request < NONE.getId()) {
             return values()[request];
         }
         return NONE;

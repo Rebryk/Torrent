@@ -5,6 +5,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by rebryk on 13/04/16.
@@ -67,13 +68,15 @@ public class ClientHandler extends SocketHandler {
     private void getSeeds(final DataInputStream inputStream,
                           final DataOutputStream outputStream) throws IOException {
         final int fileId = inputStream.readInt();
-        final List<ClientDescription> seedingClients = new ArrayList<>();
+
+        List<ClientDescription> seedingClients;
         synchronized (clients) {
-            clients.forEach((client, files) -> {
-                if (files.contains(fileId)) {
-                    seedingClients.add(client);
-                }
-            });
+            seedingClients = clients
+                    .entrySet()
+                    .stream()
+                    .filter(entry -> entry.getValue().contains(fileId))
+                    .map(Map.Entry::getKey)
+                    .collect(Collectors.toList());
         }
 
         outputStream.writeInt(seedingClients.size());

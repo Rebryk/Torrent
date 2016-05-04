@@ -3,28 +3,24 @@ package ru.spbau.mit;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.util.*;
 
 /**
  * Created by rebryk on 13/04/16.
  */
 
-public class P2PConnection extends AbstractServer {
+public class P2PConnection extends Server {
     private Socket socket;
+    // not nullable final fields
     private DataInputStream inputStream;
     private DataOutputStream outputStream;
 
-    private final Map<Integer, FileDescription> files; // local files
-
-    public P2PConnection(final short port) {
-        super(port);
-        files = new HashMap<>();
-        setHandlerFactory(new P2PClientHandlerFactory(files));
+    public P2PConnection(final Map<Integer, FileDescription> files) {
+        super(0);
+        setHandlerFactory(socket -> new P2PClientHandler(socket, files));
     }
 
-    public void connect(final byte[] ip, final short port) throws IOException {
+    public void connect(final byte[] ip, final int port) throws IOException {
         socket = new Socket(InetAddress.getByAddress(ip), port);
         inputStream = new DataInputStream(socket.getInputStream());
         outputStream = new DataOutputStream(socket.getOutputStream());
@@ -36,32 +32,12 @@ public class P2PConnection extends AbstractServer {
         }
     }
 
-    public void addFile(final FileDescription file) {
-        synchronized (files) {
-            files.put(file.getId(), file);
-        }
-    }
-
-    public void addBlock(final int fileId, final int block) {
-        synchronized (files) {
-            if (files.containsKey(fileId)) {
-                files.get(fileId).addBlock(block);
-            }
-        }
-    }
-
-    public List<Integer> getAvailableFiles() {
-        synchronized (files) {
-            return new ArrayList<>(files.keySet());
-        }
-    }
-
     public byte[] getFileBlock(final int fileId, final int block) throws IOException {
         if (outputStream == null || inputStream == null) {
             return null;
         }
 
-        outputStream.writeInt(RequestType.GET_FILE_PART.getValue());
+        outputStream.writeInt(RequestType.GET_FILE_PART.getId());
         outputStream.writeInt(fileId);
         outputStream.writeInt(block);
         outputStream.flush();
@@ -76,7 +52,7 @@ public class P2PConnection extends AbstractServer {
             return null;
         }
 
-        outputStream.writeInt(RequestType.GET_FILE_STATUS.getValue());
+        outputStream.writeInt(RequestType.GET_FILE_STATUS.getId());
         outputStream.writeInt(fileId);
         outputStream.flush();
 
@@ -87,36 +63,5 @@ public class P2PConnection extends AbstractServer {
         }
 
         return parts;
-    }
-
-    public void saveFilesInfo() throws IOException {
-        File dataFile = TorrentSettings.DATA_FILE_PATH.toFile();
-        if (!dataFile.exists()) {
-            Files.createFile(TorrentSettings.DATA_FILE_PATH);
-            dataFile = TorrentSettings.DATA_FILE_PATH.toFile();
-        }
-
-        DataOutputStream outputStream = new DataOutputStream(new FileOutputStream(dataFile));
-
-        outputStream.writeInt(files.size());
-        for (Map.Entry<Integer, FileDescription> entry : files.entrySet()) {
-            entry.getValue().writeToStream(outputStream);
-        }
-        outputStream.close();
-    }
-
-    public void loadFilesInfo() throws IOException {
-        if (!TorrentSettings.DATA_FILE_PATH.toFile().exists()) {
-            throw new NoSuchFileException(TorrentSettings.DATA_FILE_PATH.toString());
-        }
-
-        File dataFile = TorrentSettings.DATA_FILE_PATH.toFile();
-        DataInputStream inputStream = new DataInputStream(new FileInputStream(dataFile));
-
-        int filesCount = inputStream.readInt();
-        for (int i = 0; i < filesCount; i++) {
-            final FileDescription file = new FileDescription(inputStream);
-            files.put(file.getId(), file);
-        }
     }
 }

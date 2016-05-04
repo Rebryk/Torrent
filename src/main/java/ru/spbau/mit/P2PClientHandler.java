@@ -6,8 +6,8 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.util.BitSet;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Created by rebryk on 14/04/16.
@@ -43,10 +43,13 @@ public class P2PClientHandler extends SocketHandler {
 
         synchronized (files) {
             if (files.containsKey(fileId)) {
-                Set<Integer> parts = files.get(fileId).getBlocks();
-                outputStream.writeInt(parts.size());
-                for (Integer part : parts) {
-                    outputStream.writeInt(part);
+                BitSet parts = files.get(fileId).getBlocks();
+                outputStream.writeInt(parts.cardinality());
+
+                for (Integer part = 0; part < parts.length(); ++part) {
+                    if (parts.get(part)) {
+                        outputStream.writeInt(part);
+                    }
                 }
             } else {
                 outputStream.writeInt(0);
@@ -63,6 +66,7 @@ public class P2PClientHandler extends SocketHandler {
 
         synchronized (files) {
             if (files.containsKey(fileId) && files.get(fileId).hasBlock(fileBlock)) {
+                // RA file
                 DataInputStream fileStream =
                         new DataInputStream(Files.newInputStream(files.get(fileId).getPath()));
                 fileStream.skipBytes(fileBlock * TorrentSettings.BLOCK_SIZE);

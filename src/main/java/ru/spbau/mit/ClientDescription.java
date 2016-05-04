@@ -10,34 +10,34 @@ import java.util.Arrays;
  */
 public class ClientDescription {
     private final byte[] ip;
-    private final short port;
+    private final int port;
 
-    public ClientDescription(final byte[] ip, final short port) {
+    public ClientDescription(final byte[] ip, final int port) {
         this.ip = ip;
         this.port = port;
     }
 
     public ClientDescription(final byte[] ip, final DataInputStream stream) throws IOException {
-        this(ip, stream.readShort());
+        this(ip, stream.readInt());
     }
 
     public ClientDescription(final DataInputStream stream) throws IOException {
         this.ip = new byte[TorrentSettings.IP_BUFFER_SIZE];
         stream.read(ip, 0, TorrentSettings.IP_BUFFER_SIZE);
-        this.port = stream.readShort();
+        this.port = stream.readInt();
     }
 
     public byte[] getIp() {
         return ip;
     }
 
-    public short getPort() {
+    public int getPort() {
         return port;
     }
 
     @Override
     public int hashCode() {
-        return port + TorrentSettings.HASH_BASE * Arrays.hashCode(ip);
+        return port + 31 * Arrays.hashCode(ip);
     }
 
     @Override
@@ -46,12 +46,12 @@ public class ClientDescription {
             return false;
         }
         ClientDescription description = (ClientDescription) obj;
-        return ip == description.ip && port == description.port;
+        return Arrays.equals(ip, description.ip) && port == description.port;
     }
 
     public void writeToStream(final DataOutputStream stream) throws IOException {
         stream.write(ip);
-        stream.writeShort(port);
+        stream.writeInt(port);
     }
 
 }

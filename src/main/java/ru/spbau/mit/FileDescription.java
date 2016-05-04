@@ -6,21 +6,21 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.BitSet;
 
 /**
  * Created by rebryk on 13/04/16.
  */
 public class FileDescription extends FileShortDescription {
     private Path path;
-    private Set<Integer> blocks;
+
+    private BitSet blocks;
     private int blocksCount;
 
     public FileDescription(final int id, final Path path, final long size) {
         super(id, path.getFileName().toString(), size);
         this.path = path;
-        this.blocks = new HashSet<>();
+        this.blocks = new BitSet();
         this.blocksCount = (int) ((size + TorrentSettings.BLOCK_SIZE - 1) / TorrentSettings.BLOCK_SIZE);
     }
 
@@ -28,19 +28,19 @@ public class FileDescription extends FileShortDescription {
         this(id, file.toPath(), file.length());
 
         for (int i = 0; i < blocksCount; ++i) {
-            this.blocks.add(i);
+            this.blocks.set(i);
         }
     }
 
     public FileDescription(final DataInputStream stream) throws IOException {
         super(stream);
         this.path = Paths.get(stream.readUTF());
-        this.blocks = new HashSet<>();
+        this.blocks = new BitSet();
         this.blocksCount = (int) ((getSize() + TorrentSettings.BLOCK_SIZE - 1) / TorrentSettings.BLOCK_SIZE);
 
         int savedBlocksCount = stream.readInt();
         for (int j = 0; j < savedBlocksCount; j++) {
-            blocks.add(stream.readInt());
+            blocks.set(stream.readInt());
         }
     }
 
@@ -48,13 +48,15 @@ public class FileDescription extends FileShortDescription {
         super.writeToStream(stream);
         stream.writeUTF(path.toString());
         stream.writeInt(blocks.size());
-        for (int block : blocks) {
-            stream.writeInt(block);
+        for (int i = 0; i < blocksCount; ++i) {
+            if (blocks.get(i)) {
+                stream.writeInt(i);
+            }
         }
     }
 
     public boolean isDownloaded() {
-        return blocks.size() == blocksCount;
+        return blocks.cardinality() == blocksCount;
     }
 
     public Path getPath() {
@@ -62,10 +64,10 @@ public class FileDescription extends FileShortDescription {
     }
 
     public void addBlock(final int block) {
-        blocks.add(block);
+        blocks.set(block);
     }
 
-    public Set<Integer> getBlocks() {
+    public BitSet getBlocks() {
         return blocks;
     }
 
@@ -74,6 +76,14 @@ public class FileDescription extends FileShortDescription {
     }
 
     public boolean hasBlock(final int block) {
-        return blocks.contains(block);
+        return blocks.get(block);
+    }
+
+    public int getBlockSize(final int block) {
+        int blockSize = TorrentSettings.BLOCK_SIZE;
+        if (block == blocksCount - 1) {
+            blockSize = (int) (getSize() % TorrentSettings.BLOCK_SIZE);
+        }
+        return blockSize;
     }
 }
