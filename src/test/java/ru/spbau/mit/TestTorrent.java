@@ -21,7 +21,6 @@ import static org.junit.Assert.assertEquals;
 
 public class TestTorrent {
     private static final Path DIRECTORY_PATH = Paths.get("src", "test", "test_folder");
-    private static final int DELAY = 100;
 
     private static final Path DIRECTORY_CLIENT_1 = DIRECTORY_PATH.resolve("client_1");
     private static final String FILE_NAME_1 = "File 1";
