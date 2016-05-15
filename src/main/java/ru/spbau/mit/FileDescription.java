@@ -59,6 +59,10 @@ public class FileDescription extends FileShortDescription {
         return blocks.cardinality() == blocksCount;
     }
 
+    public int getProgress() {
+        return 100 * blocks.cardinality() / blocksCount;
+    }
+
     public Path getPath() {
         return path;
     }
