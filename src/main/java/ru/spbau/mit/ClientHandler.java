@@ -102,6 +102,8 @@ public class ClientHandler extends SocketHandler {
             for (int i = 0; i < count; ++i) {
                 clientFiles.add(inputStream.readInt());
             }
+            outputStream.writeBoolean(true);
+            outputStream.flush();
 
             if (removeTasks.containsKey(client)) {
                 removeTasks.get(client).cancel();
@@ -117,12 +119,12 @@ public class ClientHandler extends SocketHandler {
             removeTasks.remove(client);
             removeTasks.put(client, removeTask);
             removeTimer.schedule(removeTask, TorrentSettings.UPDATE_DELAY);
+
             clients.remove(client);
             clients.put(client, clientFiles);
-            outputStream.writeBoolean(true);
         } catch (IOException e) {
             outputStream.writeBoolean(false);
+            outputStream.flush();
         }
-        outputStream.flush();
     }
 }

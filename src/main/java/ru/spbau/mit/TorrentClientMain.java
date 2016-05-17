@@ -32,10 +32,11 @@ public class TorrentClientMain {
         this.files = new ConcurrentHashMap<>();
         this.filesToDownload = new ConcurrentHashMap<>();
         this.connection = new P2PConnection(files);
-        this.updateTimer = new Timer();
     }
 
-    public void start(final byte[] ip) throws IOException {
+    public synchronized void start(final byte[] ip) throws IOException {
+        updateTimer = new Timer();
+
         socket = new Socket(InetAddress.getByAddress(ip), TorrentSettings.TORRENT_SERVER_PORT);
         inputStream = new DataInputStream(socket.getInputStream());
         outputStream = new DataOutputStream(socket.getOutputStream());
@@ -46,12 +47,10 @@ public class TorrentClientMain {
         updateTask = new TimerTask() {
             @Override
             public void run() {
-                synchronized (TorrentClientMain.this) {
-                    try {
-                        update();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                try {
+                    update();
+                } catch (IOException e) {
+                    // update failed
                 }
             }
         };
@@ -59,9 +58,11 @@ public class TorrentClientMain {
         updateTimer.schedule(updateTask, 0, TorrentSettings.UPDATE_DELAY);
     }
 
-    public void stop() throws IOException {
-        updateTask.cancel();
+    public synchronized void stop() throws IOException {
         updateTimer.cancel();
+        updateTimer.purge();
+        updateTask.cancel();
+
         connection.stop();
         connection.disconnect();
         socket.close();
@@ -229,18 +230,25 @@ public class TorrentClientMain {
 
     public void run(final byte[] address) throws IOException {
         final List<Integer> files = filesToDownload.get(InetAddress.getByAddress(address));
-        if (files == null) {
-            return;
+        if (files != null) {
+            final Path downloadDirectory = Paths.get(TorrentSettings.DOWNLOAD_DIRECTORY);
+            if (!downloadDirectory.toFile().exists()) {
+                Files.createDirectories(downloadDirectory);
+            }
+
+            for (int file : files) {
+                download(file, Paths.get(TorrentSettings.DOWNLOAD_DIRECTORY));
+            }
         }
 
-        final Path downloadDirectory = Paths.get(TorrentSettings.DOWNLOAD_DIRECTORY);
-        if (!downloadDirectory.toFile().exists()) {
-            Files.createDirectories(downloadDirectory);
+        while (!socket.isClosed()) {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                //
+            }
         }
-
-        for (int file : files) {
-            download(file, Paths.get(TorrentSettings.DOWNLOAD_DIRECTORY));
-        }
+        System.out.println("TorrentClientMain: run finished!");
     }
 
     public static void main(String[] args) {
@@ -300,7 +308,7 @@ public class TorrentClientMain {
         return null;
     }
 
-    private boolean update() throws IOException {
+    private synchronized boolean update() throws IOException {
         final List<Integer> files = getAvailableFiles();
 
         outputStream.writeInt(RequestType.UPDATE.getId());
