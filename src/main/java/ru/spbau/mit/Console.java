@@ -28,6 +28,7 @@ public final class Console {
             client.start(address);
             client.run(address);
         } catch (IOException e) {
+            System.out.println("Console: run failed.");
             System.out.println(e.getMessage());
         }
     }
@@ -48,8 +49,8 @@ public final class Console {
             }
 
             client.stop();
-
         } catch (IOException e) {
+            System.out.println("Console: list failed.");
             System.out.println(e.getMessage());
         }
     }
@@ -58,6 +59,7 @@ public final class Console {
         try {
             client.addFileToDownload(InetAddress.getByAddress(address), id);
         } catch (Exception e) {
+            System.out.println("Console: download failed.");
             System.out.println(e.getMessage());
         }
     }
@@ -68,6 +70,7 @@ public final class Console {
             client.uploadFile(Paths.get(path));
             client.stop();
         } catch (Exception e) {
+            System.out.println("Console: upload failed.");
             System.out.println(e.getMessage());
         }
     }
