@@ -28,7 +28,7 @@ public class TorrentClientMain {
     private Timer updateTimer;
     private TimerTask updateTask;
 
-    TorrentClientMain() {
+    public TorrentClientMain() {
         this.files = new ConcurrentHashMap<>();
         this.filesToDownload = new ConcurrentHashMap<>();
         this.connection = new P2PConnection(files);
@@ -76,6 +76,10 @@ public class TorrentClientMain {
         if (files.containsKey(fileId)) {
             files.get(fileId).addBlock(block);
         }
+    }
+
+    public Map<Integer, FileDescription> getFiles() {
+        return files;
     }
 
     public List<Integer> getAvailableFiles() {
